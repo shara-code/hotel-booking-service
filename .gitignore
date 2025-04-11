@@ -9,5 +9,5 @@ wheels/
 # Virtual environments
 .venv
 
-# Migrations
-migrations/
+# Secrets
+.env

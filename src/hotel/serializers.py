@@ -1,11 +1,16 @@
 from rest_framework import serializers
 from .models import Room, Booking
+from decimal import Decimal
 
 
 class RoomSerializer(serializers.ModelSerializer):
+    price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, min_value=Decimal("0.01")
+    )
+
     class Meta:
         model = Room
-        fields = ["id", "description", "price", "date_added"]
+        fields = ["id", "description", "price", "created_at"]
 
 
 class BookingSerializer(serializers.ModelSerializer):
@@ -15,19 +20,21 @@ class BookingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ["id", "room_id", "date_start", "date_end"]
+        fields = ["id", "room_id", "start_date", "end_date"]
         read_only_fields = ["id"]
 
     def validate(self, data):
-        if data["date_start"] >= data["date_end"]:
-            raise serializers.ValidationError("End date must be after start date.")
+        if data["start_date"] >= data["end_date"]:
+            raise serializers.ValidationError(
+                "Дата окончания должна быть позже даты начала."
+            )
         room = data["room"]
         overlapping_bookings = Booking.objects.filter(
-            room=room, date_start__lt=data["date_end"], date_end__gt=data["date_start"]
+            room=room, start_date__lt=data["end_date"], end_date__gt=data["start_date"]
         )
         if overlapping_bookings.exists():
             raise serializers.ValidationError(
-                "The room is already booked for the selected dates."
+                "Номер уже забронирован на выбранные даты."
             )
         return data
 
@@ -37,4 +44,4 @@ class BookingListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ["booking_id", "date_start", "date_end"]
+        fields = ["booking_id", "start_date", "end_date"]
