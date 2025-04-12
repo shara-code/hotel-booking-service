@@ -1,12 +1,17 @@
-FROM python:3.12-slim
-
-RUN pip install uv
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
 WORKDIR /app
-COPY . /app
 
-ENV PYTHONPATH=/app/src:$PYTHONPATH
+COPY pyproject.toml uv.lock /app/
 
-RUN uv sync
+RUN uv sync --frozen --no-install-project --no-dev
 
-CMD ["/app/.venv/bin/gunicorn", "--workers", "1", "--bind", "0.0.0.0:8000", "src.bookingsite.wsgi:application"]
+COPY src/. /app/
+
+RUN uv sync --frozen --no-dev
+
+ENV PATH="/app/.venv/bin:$PATH"
+
+EXPOSE 8000
+
+CMD ["gunicorn", "bookingsite.wsgi:application", "--bind", "0.0.0.0:8000"]
